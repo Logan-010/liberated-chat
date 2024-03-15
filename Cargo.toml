@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+members = [ "liberated-chat-frontend","liberated-chat-server"]
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
+opt-level = "z"
+panic = "abort"
+strip = "symbols"
