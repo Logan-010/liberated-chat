@@ -52,9 +52,12 @@ pub struct InsertPost {
 
 impl AppState {
     pub fn new() -> Self {
-        let db =
-            rusqlite::Connection::open(std::env::var("DATABASE_URL").expect("Set DATABASE_URL!"))
-                .unwrap();
+        let path = format!(
+            "{}/{}",
+            env!("DATABASE_PATH", "Set DATABASE_PATH!"),
+            env!("DATABASE_NAME", "Set DATABASE_NAME!")
+        );
+        let db = rusqlite::Connection::open(path).unwrap();
 
         db.execute_batch(
             "

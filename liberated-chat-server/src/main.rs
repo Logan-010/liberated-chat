@@ -203,10 +203,7 @@ async fn page_404() -> actix_web::Result<HttpResponse> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let port: u16 = std::env::var("SERVER_PORT")
-        .expect("Set SERVER_PORT!")
-        .parse()
-        .unwrap();
+    let port: u16 = env!("SERVER_PORT", "Set SERVER_PORT!").parse().unwrap();
 
     let state = actix_web::web::Data::new(types::AppState::new());
 
@@ -224,7 +221,7 @@ async fn main() -> std::io::Result<()> {
             .service(logout)
             //ALWAYS have static files last, unless no other path will match anything.
             .service(
-                actix_files::Files::new("/", "./liberated-chat-frontend/dist")
+                actix_files::Files::new("/", env!("FRONTEND_PATH", "Set FRONTEND_PATH!"))
                     .index_file("index.html"),
             )
             .default_service(actix_web::web::route().to(page_404))
