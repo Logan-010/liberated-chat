@@ -12,6 +12,7 @@ Built with:
 - Actix
 - Leptos
 - Rusqlite
+- Tailwindcss
 
 # Building:
 Be sure to have Rust installed and avalible.
