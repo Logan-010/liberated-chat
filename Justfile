@@ -28,6 +28,7 @@ clear-all: clear-users clear-sessions clear-messages
 clean:
   cargo clean
   rm -f "$DATABASE_PATH"/"$DATABASE_NAME"
+  rm -rf liberated-chat-frontend/dist
 
 @build-frontend:
   cd liberated-chat-frontend && trunk build --release
