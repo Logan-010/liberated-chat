@@ -1,7 +1,0 @@
-curl -X POST -H "Username: your_username" -H "Password: your_password" http://localhost:8080/register
-curl -X POST -H "Username: your_username" -H "Password: your_password" -c cookies.txt http://localhost:8080/login
-curl -X POST -H "Username: your_username" -b cookies.txt -d "Your post message" http://localhost:8080/newpost
-curl -X GET -H "Username: your_username" -b cookies.txt http://localhost:8080/posts
-curl -X POST -H "Username: your_username" -b cookies.txt http://localhost:8080/logout
-
-Current state: fully working auth!

@@ -5,10 +5,25 @@ default:
 
 test:
   cargo test
+
+clippy:
   cargo clippy
+
+test-suite: test clippy
 
 install-dependencies:
   cargo install --locked trunk
+
+clear-users:
+  cargo run --bin clear-users
+
+clear-sessions:
+  cargo run --bin clear-sessions
+
+clear-messages:
+  cargo run --bin clear-messages
+
+clear-all: clear-users clear-sessions clear-messages
 
 clean:
   cargo clean
@@ -42,7 +57,7 @@ run-debug: build-all-debug
   mkdir -p ./bundle
   mkdir -p ./bundle/"$DATABASE_PATH"
   mkdir -p ./bundle/"$FRONTEND_PATH"
-  cp ./target/release/liberated-chat-server* ./bundle
+  mv ./target/release/liberated-chat-server* ./bundle
   rm ./bundle/liberated-chat-server.d
   cp -R ./liberated-chat-frontend/dist/* ./bundle/"$FRONTEND_PATH"
 
@@ -50,7 +65,7 @@ bundle-debug: build-all-debug
   mkdir -p ./bundle
   mkdir -p ./bundle/"$DATABASE_PATH"
   mkdir -p ./bundle/"$FRONTEND_PATH"
-  cp ./target/debug/liberated-chat-server* ./bundle
+  mv ./target/debug/liberated-chat-server* ./bundle
   rm ./bundle/liberated-chat-server.d
   cp -R ./liberated-chat-frontend/dist/* ./bundle/"$FRONTEND_PATH"
 

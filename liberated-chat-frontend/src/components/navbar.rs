@@ -18,6 +18,9 @@ pub fn NavBar(toggle_login: WriteSignal<bool>) -> impl IntoView {
             <div class="flex items-center gap-2 text-lg font-semibold">
                 <span>Liberated Chat</span>
                 <Icon/>
+                <p>
+                    <i>Times all in UTC, site subject to change, no illegal stuff please.</i>
+                </p>
             </div>
             <div class="ml-auto flex items-center gap-4">
                 <p class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors">

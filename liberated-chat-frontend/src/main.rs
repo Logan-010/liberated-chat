@@ -16,7 +16,7 @@ fn App() -> impl IntoView {
         <main>
             <NavBar toggle_login=set_login_toggle/>
 
-            <Show when=move || { !login_toggle.get() } fallback=|| view! { <LoginPage/> }>
+            <Show when=move || { !login_toggle.get() } fallback=move || view! { <LoginPage/> }>
                 <Chat/>
             </Show>
         </main>
