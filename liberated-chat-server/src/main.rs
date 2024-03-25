@@ -4,6 +4,15 @@ use actix_web::{App, HttpServer};
 mod types;
 mod utils;
 
+const FAVICON: &[u8] = include_bytes!("../favicon.ico");
+
+#[get("/favicon")]
+async fn favicon() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("image/x-icon")
+        .body(FAVICON)
+}
+
 #[post("/login")]
 async fn login(
     req: actix_web::HttpRequest,
@@ -214,6 +223,7 @@ async fn main() -> std::io::Result<()> {
             //Clone required, actix uses multiple threads.
             .app_data(state.clone())
             .wrap(actix_web::middleware::Compress::default())
+            .service(favicon)
             .service(register_user)
             .service(login)
             .service(get_posts)
