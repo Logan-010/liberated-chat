@@ -1,3 +1,4 @@
 /target
 /bundle
 /.git
+/liberated-chat-frontend/dist
