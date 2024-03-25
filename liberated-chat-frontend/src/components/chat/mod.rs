@@ -7,7 +7,7 @@ mod message;
 #[derive(Deserialize, Debug, Clone)]
 struct Post {
     // Not used yet!
-    _post_num: u64,
+    // _post_num: u64,
     user: String,
     message: String,
     time: String,

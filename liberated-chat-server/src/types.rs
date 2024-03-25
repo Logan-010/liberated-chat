@@ -1,7 +1,7 @@
 use actix_web::http::StatusCode;
 use derive_more::{Display, Error};
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
+use std::{env, sync::Mutex};
 
 #[derive(Debug, Display, Error)]
 pub enum AppError {
@@ -54,8 +54,8 @@ impl AppState {
     pub fn new() -> Self {
         let path = format!(
             "{}/{}",
-            env!("DATABASE_PATH", "Set DATABASE_PATH!"),
-            env!("DATABASE_NAME", "Set DATABASE_NAME!")
+            env::var("DATABASE_PATH").expect("Set DATABASE_PATH env variable!"),
+            env::var("DATABASE_NAME").expect("Set DATABASE_NAME env variable!")
         );
         let db = rusqlite::Connection::open(path).unwrap();
 

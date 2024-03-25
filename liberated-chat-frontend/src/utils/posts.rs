@@ -3,9 +3,10 @@ use std::path::Path;
 use reqwest::StatusCode;
 
 pub async fn get_posts() -> Result<String, Box<dyn std::error::Error>> {
-    let url = Path::new(super::BASE_URL);
+    let base_url = super::get_base_url().expect("Failed to get base url!");
+    let path = Path::new(&base_url);
 
-    let req = reqwest::get(url.join("posts").to_str().unwrap()).await?;
+    let req = reqwest::get(path.join("posts").to_str().unwrap()).await?;
 
     match req.status() {
         StatusCode::OK => Ok(req.text().await?),

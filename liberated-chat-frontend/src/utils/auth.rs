@@ -2,7 +2,8 @@ use reqwest::StatusCode;
 use std::path::Path;
 
 pub async fn login(username: &str, password: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let path = Path::new(super::BASE_URL);
+    let base_url = super::get_base_url().expect("Failed to get base url!");
+    let path = Path::new(&base_url);
 
     let client = reqwest::Client::new();
     let req = client
@@ -34,7 +35,8 @@ pub async fn register(
     username: &str,
     password: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let path = Path::new(super::BASE_URL);
+    let base_url = super::get_base_url().expect("Failed to get base url!");
+    let path = Path::new(&base_url);
 
     let client = reqwest::Client::new();
     let req = client
@@ -63,7 +65,8 @@ pub async fn register(
 }
 
 pub async fn logout() -> Result<(), Box<dyn std::error::Error>> {
-    let path = Path::new(super::BASE_URL);
+    let base_url = super::get_base_url().expect("Failed to get base url!");
+    let path = Path::new(&base_url);
 
     let client = reqwest::Client::new();
     let req = client
@@ -81,7 +84,8 @@ pub async fn logout() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub async fn send_message(message: String) -> Result<(), Box<dyn std::error::Error>> {
-    let path = Path::new(super::BASE_URL);
+    let base_url = super::get_base_url().expect("Failed to get base url!");
+    let path = Path::new(&base_url);
 
     let client = reqwest::Client::new();
     let req = client

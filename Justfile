@@ -61,6 +61,7 @@ run-debug: build-all-debug
   mv ./target/release/liberated-chat-server* ./bundle
   rm ./bundle/liberated-chat-server.d
   cp -R ./liberated-chat-frontend/dist/* ./bundle/"$FRONTEND_PATH"
+  cp ./.env ./bundle/.env
 
 bundle-debug: build-all-debug
   mkdir -p ./bundle
@@ -69,4 +70,5 @@ bundle-debug: build-all-debug
   mv ./target/debug/liberated-chat-server* ./bundle
   rm ./bundle/liberated-chat-server.d
   cp -R ./liberated-chat-frontend/dist/* ./bundle/"$FRONTEND_PATH"
+  cp ./.env ./bundle/.env
 
