@@ -2,20 +2,29 @@
 Liberated chat is a dead simple chatroom. That's that.
 
 Features:
-- Auth
+- Auth (Argon2 hashed passwords)
 - Persistance (sqlite3 database)
 - Included dockerfile
 - Simplicity
+- Gzip(p'ed) responses
 
 Built with:
 - Rust
-- Actix
-- Leptos
+- Actix-web
+- Argon2
+- Serde
 - Rusqlite
+- Leptos
 - Tailwindcss
+- Reqwest
 
 # Building:
 Be sure to have Rust installed and avalible.
+
+Install wasm target:
+```sh
+rustup target add wasm32-unknown-unknown
+```
 
 Install Just (build manager):
 ```sh
