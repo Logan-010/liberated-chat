@@ -65,6 +65,7 @@ impl AppState {
                 username TEXT NOT NULL UNIQUE,
                 password TEXT NOT NULL
             );
+            CREATE INDEX username_index ON users (username);
             CREATE TABLE IF NOT EXISTS posts (
                 postNum INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL,
@@ -76,6 +77,7 @@ impl AppState {
                 sessionId TEXT NOT NULL UNIQUE,
                 expiration INTEGER NOT NULL
             );
+            CREATE INDEX sessions_index ON sessions (username, sessionId);
             ",
         )
         .unwrap();

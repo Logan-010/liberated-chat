@@ -63,12 +63,7 @@ pub fn generate_session(
     let session = uuid::Uuid::new_v4().to_string();
 
     db.execute(
-        "DELETE FROM sessions WHERE username = ?;",
-        params![username],
-    )?;
-
-    db.execute(
-        "INSERT INTO sessions VALUES (?, ?, ?);",
+        "INSERT OR REPLACE INTO sessions (username, sessionId, expiration) VALUES (?, ?, ?);",
         params![username, session, get_two_days()],
     )?;
 

@@ -12,9 +12,9 @@ actix-web = { version = "4.5.1", default-features = false, features = [
   "macros",
   "compress-gzip",
 ] }
-argon2 = "0.5.3"
+argon2 = { version = "0.5.3", features = ["password-hash", "alloc"], default-features = false }
 derive_more = { version = "0.99.17", default-features = false }
-dotenv = "0.15.0"
+dotenv = { version = "0.15.0", default-features = false }
 rusqlite = { version = "0.31.0", features = [
   "bundled",
 ], default-features = false }
