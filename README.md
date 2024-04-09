@@ -10,13 +10,17 @@ Features:
 
 Built with:
 - Rust
-- Actix-web
+- Axum
+- Tokio
+- Tower
 - Argon2
 - Serde
 - Rusqlite
 - Leptos
 - Tailwindcss
 - Reqwest
+
+(previous versions use Actix-web rather than Axum)
 
 # Building:
 Be sure to have Rust installed and avalible.

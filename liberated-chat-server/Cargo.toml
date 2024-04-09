@@ -6,19 +6,41 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-files = { version = "0.6.5", default-features = false }
-actix-web = { version = "4.5.1", default-features = false, features = [
-  "cookies",
-  "macros",
-  "compress-gzip",
-] }
-argon2 = { version = "0.5.3", features = ["password-hash", "alloc"], default-features = false }
-derive_more = { version = "0.99.17", default-features = false }
 dotenv = { version = "0.15.0", default-features = false }
+
+axum = { version = "0.7.5", features = [
+  "http1",
+  "tokio",
+], default-features = false }
+tower-http = { version = "0.5.2", features = [
+  "compression-gzip",
+  "fs",
+], default-features = false }
+axum-extra = { version = "0.9.3", features = [
+  "cookie",
+], default-features = false }
+
+argon2 = { version = "0.5.3", features = [
+  "password-hash",
+  "alloc",
+], default-features = false }
+rand_core = { version = "0.6.4", features = [
+  "getrandom",
+], default-features = false }
 rusqlite = { version = "0.31.0", features = [
   "bundled",
 ], default-features = false }
+
 serde = { version = "1.0.197", features = ["derive"], default-features = false }
-serde_json = { version = "1.0.114", default-features = false }
+serde_json = { version = "1.0.114", features = [
+  "alloc",
+], default-features = false }
+
+tokio = { version = "1.37.0", features = [
+  "rt-multi-thread",
+  "macros",
+  "net",
+], default-features = false }
+
 time = { version = "0.3.34", default-features = false }
 uuid = { version = "1.7.0", features = ["v4"], default-features = false }

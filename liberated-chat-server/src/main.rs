@@ -1,164 +1,156 @@
-use std::env;
-
-use actix_web::cookie::Cookie;
-use actix_web::{get, post, HttpResponse};
-use actix_web::{App, HttpServer};
 mod types;
 mod utils;
 
+use axum::{
+    body::Bytes,
+    extract::{Request, State},
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post},
+    Router,
+};
+use axum_extra::extract::{cookie::Cookie, CookieJar};
+use std::env;
+use tower_http::{
+    compression::CompressionLayer,
+    services::{ServeDir, ServeFile},
+};
+
 const FAVICON: &[u8] = include_bytes!("../favicon.ico");
 
-#[get("/favicon")]
-async fn favicon() -> HttpResponse {
-    HttpResponse::Ok()
-        .content_type("image/x-icon")
-        .body(FAVICON)
+async fn favicon() -> Bytes {
+    Bytes::from(FAVICON)
 }
 
-#[post("/login")]
 async fn login(
-    req: actix_web::HttpRequest,
-    state: actix_web::web::Data<types::AppState>,
-) -> Result<HttpResponse, types::AppError> {
-    let username = req
-        .headers()
+    jar: CookieJar,
+    State(state): State<types::AppState>,
+    req: Request,
+) -> Result<CookieJar, StatusCode> {
+    let headers = req.headers();
+    let username = headers
         .get("Username")
-        .and_then(|v| v.to_str().ok())
-        .ok_or(types::AppError::UserError)?;
-
-    let password = req
-        .headers()
+        .ok_or(StatusCode::BAD_REQUEST)?
+        .to_str()
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+    let password = headers
         .get("Password")
-        .and_then(|v| v.to_str().ok())
-        .ok_or(types::AppError::UserError)?;
+        .ok_or(StatusCode::BAD_REQUEST)?
+        .to_str()
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
 
     if username.is_empty() || password.is_empty() {
-        return Err(types::AppError::UserError);
+        return Err(StatusCode::BAD_REQUEST);
     }
 
     let db = state
         .db
         .lock()
-        .map_err(|_| types::AppError::InternalError)?;
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    if let Some(cookie) = req.cookie("Liberated-Chat-Auth") {
+    if let Some(cookie) = jar.get("Liberated-Chat-Auth") {
         if let Ok(v) = utils::validate_session(username, cookie.value(), &db) {
             if v {
-                return Err(types::AppError::AlreadyLoggedIn);
+                return Err(StatusCode::OK);
             }
         }
     }
 
-    let valid = utils::validate_password(username, password, &db)
-        .map_err(|_| types::AppError::UserDoesNotExist)?;
+    let valid =
+        utils::validate_password(username, password, &db).map_err(|_| StatusCode::CONFLICT)?;
 
     if valid {
-        let session = utils::generate_session(username, &db).map_err(|e| {
-            println!("{e:?}");
-            types::AppError::DatabaseError
-        })?;
+        let session = utils::generate_session(username, &db)
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-        let cookie = Cookie::build("Liberated-Chat-Auth", session)
-            .max_age(actix_web::cookie::time::Duration::days(2))
-            .secure(true)
-            .finish();
-
-        Ok(HttpResponse::Ok().cookie(cookie).finish())
+        Ok(jar.add(Cookie::new("Liberated-Chat-Auth", session)))
     } else {
-        Err(types::AppError::WrongLogin)
+        Err(StatusCode::UNAUTHORIZED)
     }
 }
 
-#[post("/register")]
-async fn register_user(
-    req: actix_web::HttpRequest,
-    state: actix_web::web::Data<types::AppState>,
-) -> Result<String, types::AppError> {
-    let username = req
-        .headers()
+async fn register(
+    State(state): State<types::AppState>,
+    req: Request,
+) -> Result<String, StatusCode> {
+    let headers = req.headers();
+    let username = headers
         .get("Username")
-        .and_then(|v| v.to_str().ok())
-        .ok_or(types::AppError::UserError)?;
-
-    let password = req
-        .headers()
+        .ok_or(StatusCode::BAD_REQUEST)?
+        .to_str()
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+    let password = headers
         .get("Password")
-        .and_then(|v| v.to_str().ok())
-        .ok_or(types::AppError::UserError)?;
+        .ok_or(StatusCode::BAD_REQUEST)?
+        .to_str()
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
 
     if username.is_empty() || password.is_empty() {
-        return Err(types::AppError::UserError);
+        return Err(StatusCode::BAD_REQUEST);
     }
 
-    let hashed_password = utils::hash(password).map_err(|_| types::AppError::InternalError)?;
+    let hashed_password = utils::hash(password).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let db = state
         .db
         .lock()
-        .map_err(|_| types::AppError::InternalError)?;
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    utils::register_user(username, &hashed_password, &db)
-        .map_err(|_| types::AppError::UserAlreadyExists)?;
-
+    utils::register_user(username, &hashed_password, &db).map_err(|_| StatusCode::CONFLICT)?;
     Ok("Success!".into())
 }
 
-#[get("/posts")]
-async fn get_posts(
-    req: actix_web::HttpRequest,
-    state: actix_web::web::Data<types::AppState>,
-) -> Result<String, types::AppError> {
+async fn posts(jar: CookieJar, State(state): State<types::AppState>) -> Result<String, StatusCode> {
     let db = state
         .db
         .lock()
-        .map_err(|_| types::AppError::InternalError)?;
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let auth_cookie = if let Some(cookie) = req.cookie("Liberated-Chat-Auth") {
+    let auth_cookie = if let Some(cookie) = jar.get("Liberated-Chat-Auth") {
         cookie.value().to_string()
     } else {
-        return Err(types::AppError::NotLoggedIn);
+        return Err(StatusCode::UNAUTHORIZED);
     };
 
     let username = utils::get_username_from_session(&auth_cookie, &db)
-        .map_err(|_| types::AppError::NotLoggedIn)?;
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     let authorized = utils::validate_session(&username, &auth_cookie, &db)
-        .map_err(|_| types::AppError::NotLoggedIn)?;
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     if authorized {
-        let posts = utils::get_posts(&db).map_err(|_| types::AppError::DatabaseError)?;
+        let posts = utils::get_posts(&db).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-        serde_json::to_string(&posts).map_err(|_| types::AppError::InternalError)
+        serde_json::to_string(&posts).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
     } else {
-        Err(types::AppError::NotLoggedIn)
+        Err(StatusCode::UNAUTHORIZED)
     }
 }
 
-#[post("/newpost")]
-async fn new_post(
-    body: actix_web::web::Bytes,
-    req: actix_web::HttpRequest,
-    state: actix_web::web::Data<types::AppState>,
-) -> Result<String, types::AppError> {
+async fn newpost(
+    jar: CookieJar,
+    State(state): State<types::AppState>,
+    body: Bytes,
+) -> Result<String, StatusCode> {
     let db = state
         .db
         .lock()
-        .map_err(|_| types::AppError::InternalError)?;
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let auth_cookie = if let Some(cookie) = req.cookie("Liberated-Chat-Auth") {
+    let auth_cookie = if let Some(cookie) = jar.get("Liberated-Chat-Auth") {
         cookie.value().to_string()
     } else {
-        return Err(types::AppError::NotLoggedIn);
+        return Err(StatusCode::UNAUTHORIZED);
     };
 
     let username = utils::get_username_from_session(&auth_cookie, &db)
-        .map_err(|_| types::AppError::NotLoggedIn)?;
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     let authorized = utils::validate_session(&username, &auth_cookie, &db)
-        .map_err(|_| types::AppError::DatabaseError)?;
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     if !authorized {
-        Err(types::AppError::NotLoggedIn)
+        Err(StatusCode::UNAUTHORIZED)
     } else {
         let post = types::InsertPost {
             user: username,
@@ -166,54 +158,54 @@ async fn new_post(
             time: utils::get_formatted_time(),
         };
 
-        utils::send_message(&post, &db).map_err(|_| types::AppError::DatabaseError)?;
+        utils::send_message(&post, &db).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
         Ok("Success".into())
     }
 }
 
-#[post("/logout")]
 async fn logout(
-    req: actix_web::HttpRequest,
-    state: actix_web::web::Data<types::AppState>,
-) -> Result<HttpResponse, types::AppError> {
+    jar: CookieJar,
+    State(state): State<types::AppState>,
+) -> Result<(CookieJar, String), StatusCode> {
     let db = state
         .db
         .lock()
-        .map_err(|_| types::AppError::InternalError)?;
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let auth_cookie = if let Some(cookie) = req.cookie("Liberated-Chat-Auth") {
+    let auth_cookie = if let Some(cookie) = jar.get("Liberated-Chat-Auth") {
         cookie.value().to_string()
     } else {
-        return Err(types::AppError::NotLoggedIn);
+        return Err(StatusCode::UNAUTHORIZED);
     };
 
     let username = utils::get_username_from_session(&auth_cookie, &db)
-        .map_err(|_| types::AppError::NotLoggedIn)?;
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     let authorized = utils::validate_session(&username, &auth_cookie, &db)
-        .map_err(|_| types::AppError::DatabaseError)?;
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     if !authorized {
-        Err(types::AppError::NotLoggedIn)
+        Err(StatusCode::UNAUTHORIZED)
     } else {
-        utils::logout(&username, &db).map_err(|_| types::AppError::DatabaseError)?;
+        utils::logout(&username, &db).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-        let mut response = HttpResponse::Ok().body("Success!");
-        response
-            .add_removal_cookie(&Cookie::new("Liberated-Chat-Auth", ""))
-            .map_err(|_| types::AppError::InternalError)?;
-
-        Ok(response)
+        Ok((
+            jar.remove(Cookie::from("Liberated-Chat-Auth")),
+            "Success!".into(),
+        ))
     }
 }
 
-async fn page_404() -> actix_web::Result<HttpResponse> {
-    Ok(HttpResponse::NotFound().body("404 Page not found."))
+async fn handler_404() -> impl IntoResponse {
+    (
+        StatusCode::NOT_FOUND,
+        "Nothing to see here. Error 404 page not found.",
+    )
 }
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
+#[tokio::main]
+async fn main() {
     dotenv::dotenv().expect("Failed to load .env file. Is there one?");
 
     let port: u16 = env::var("SERVER_PORT")
@@ -221,32 +213,30 @@ async fn main() -> std::io::Result<()> {
         .parse()
         .unwrap();
 
-    let state = actix_web::web::Data::new(types::AppState::new());
+    let state = types::AppState::new();
 
-    println!("Listening on:\n\thttp://127.0.0.1:{port}\n\thttp://[::1]:{port}\n\t");
+    println!("Listening on:\n\thttp://localhost:{port}");
 
-    HttpServer::new(move || {
-        App::new()
-            //Clone required, actix uses multiple threads.
-            .app_data(state.clone())
-            .wrap(actix_web::middleware::Compress::default())
-            .service(favicon)
-            .service(register_user)
-            .service(login)
-            .service(get_posts)
-            .service(new_post)
-            .service(logout)
-            //ALWAYS have static files last, unless no other path will match anything.
-            .service(
-                actix_files::Files::new(
-                    "/",
-                    env::var("FRONTEND_PATH").expect("Set FRONTEND_PATH!"),
-                )
-                .index_file("index.html"),
-            )
-            .default_service(actix_web::web::route().to(page_404))
-    })
-    .bind(("localhost", port))?
-    .run()
-    .await
+    let frontend_path = env::var("FRONTEND_PATH").expect("Set FRONTEND_PATH!");
+    let routes = Router::new()
+        .route("/favicon", get(favicon))
+        .route("/login", post(login))
+        .route("/register", post(register))
+        .route("/posts", get(posts))
+        .route("/newpost", post(newpost))
+        .route("/logout", post(logout))
+        .nest_service(
+            "/",
+            ServeDir::new(&frontend_path)
+                .fallback(ServeFile::new(format!("{}/index.html", &frontend_path))),
+        )
+        .fallback(handler_404)
+        .with_state(state)
+        .layer(CompressionLayer::new());
+
+    let listener = tokio::net::TcpListener::bind(("localhost", port))
+        .await
+        .unwrap();
+
+    axum::serve(listener, routes).await.unwrap();
 }
