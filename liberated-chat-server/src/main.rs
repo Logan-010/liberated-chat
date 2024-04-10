@@ -11,10 +11,7 @@ use axum::{
 };
 use axum_extra::extract::{cookie::Cookie, CookieJar};
 use std::env;
-use tower_http::{
-    compression::CompressionLayer,
-    services::{ServeDir, ServeFile},
-};
+use tower_http::{compression::CompressionLayer, services::ServeDir};
 
 const FAVICON: &[u8] = include_bytes!("../favicon.ico");
 
@@ -206,6 +203,8 @@ async fn handler_404() -> impl IntoResponse {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
+
     dotenv::dotenv().expect("Failed to load .env file. Is there one?");
 
     let port: u16 = env::var("SERVER_PORT")
@@ -225,11 +224,7 @@ async fn main() {
         .route("/posts", get(posts))
         .route("/newpost", post(newpost))
         .route("/logout", post(logout))
-        .nest_service(
-            "/",
-            ServeDir::new(&frontend_path)
-                .fallback(ServeFile::new(format!("{}/index.html", &frontend_path))),
-        )
+        .nest_service("/", ServeDir::new(&frontend_path))
         .fallback(handler_404)
         .with_state(state)
         .layer(CompressionLayer::new());
