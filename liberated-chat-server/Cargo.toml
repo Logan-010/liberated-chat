@@ -45,4 +45,6 @@ tokio = { version = "1.37.0", features = [
 time = { version = "0.3.34", default-features = false }
 uuid = { version = "1.7.0", features = ["v4"], default-features = false }
 
-tracing-subscriber = { version = "0.3.18", features = ["fmt"], default-features = false }
+tracing-subscriber = { version = "0.3.18", features = [
+  "fmt",
+], default-features = false }
