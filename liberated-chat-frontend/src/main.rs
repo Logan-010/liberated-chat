@@ -4,6 +4,9 @@ use liberated_chat_frontend::components::login::LoginPage;
 use liberated_chat_frontend::components::navbar::NavBar;
 
 fn main() {
+    std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+    console_log::init().expect("Initialize logger");
+
     mount_to_body(App);
 }
 
