@@ -1,0 +1,20 @@
+meta {
+  name: New Post
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/newpost
+  body: text
+  auth: none
+}
+
+headers {
+  Username: test-username
+  Password: test-password
+}
+
+body:text {
+  Hello from the test client
+}
