@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [ "liberated-chat-frontend","liberated-chat-server"]
+members = [ "liberated-chat-frontend","liberated-chat-server", "liberated-chat-shuttle"]
 
 [profile.release]
 codegen-units = 1

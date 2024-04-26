@@ -201,20 +201,13 @@ async fn handler_404() -> impl IntoResponse {
     )
 }
 
-#[tokio::main]
-async fn main() {
+#[shuttle_runtime::main]
+async fn main() -> shuttle_axum::ShuttleAxum {
     tracing_subscriber::fmt::init();
 
     dotenv::dotenv().expect("Failed to load .env file. Is there one?");
 
-    let port: u16 = env::var("SERVER_PORT")
-        .expect("Set SERVER_PORT env variable!")
-        .parse()
-        .unwrap();
-
     let state = types::AppState::new();
-
-    println!("Listening on:\n\thttp://localhost:{port}");
 
     let frontend_path = env::var("FRONTEND_PATH").expect("Set FRONTEND_PATH!");
     let routes = Router::new()
@@ -229,9 +222,5 @@ async fn main() {
         .with_state(state)
         .layer(CompressionLayer::new());
 
-    let listener = tokio::net::TcpListener::bind(("localhost", port))
-        .await
-        .unwrap();
-
-    axum::serve(listener, routes).await.unwrap();
+    Ok(routes.into())
 }
