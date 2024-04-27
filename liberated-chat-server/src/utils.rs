@@ -49,7 +49,7 @@ pub fn register_user(
     password: &str,
     db: &rusqlite::Connection,
 ) -> Result<(), rusqlite::Error> {
-    let mut stmt = db.prepare("INSERT INTO users VALUES (?, ?);")?;
+    let mut stmt = db.prepare_cached("INSERT INTO users VALUES (?, ?);")?;
 
     stmt.execute(params![username, password])?;
 
@@ -75,7 +75,7 @@ pub fn validate_password(
     password: &str,
     db: &rusqlite::Connection,
 ) -> Result<bool, Box<dyn std::error::Error>> {
-    let mut stmt = db.prepare("SELECT password FROM users WHERE username = ?;")?;
+    let mut stmt = db.prepare_cached("SELECT password FROM users WHERE username = ?;")?;
 
     let password_hash: String = stmt.query_row(params![username], |row| row.get::<_, String>(0))?;
 
@@ -92,7 +92,8 @@ pub fn validate_session(
     session: &str,
     db: &rusqlite::Connection,
 ) -> Result<bool, rusqlite::Error> {
-    let mut stmt = db.prepare("SELECT sessionId, expiration FROM sessions WHERE username = ?;")?;
+    let mut stmt =
+        db.prepare_cached("SELECT sessionId, expiration FROM sessions WHERE username = ?;")?;
     let session_info = stmt.query_row(params![username], |row| {
         // Fetch sessionId and expiration from the row
         let session_id: String = row.get(0)?;
@@ -116,12 +117,12 @@ pub fn get_username_from_session(
     session: &str,
     db: &rusqlite::Connection,
 ) -> Result<String, rusqlite::Error> {
-    let mut stmt = db.prepare("SELECT username FROM sessions WHERE sessionId = ?;")?;
+    let mut stmt = db.prepare_cached("SELECT username FROM sessions WHERE sessionId = ?;")?;
     stmt.query_row(params![session], |row| row.get::<_, String>(0))
 }
 
 pub fn get_posts(db: &rusqlite::Connection) -> Result<Vec<super::types::Post>, rusqlite::Error> {
-    let mut stmt = db.prepare("SELECT * FROM posts;")?;
+    let mut stmt = db.prepare_cached("SELECT * FROM posts;")?;
 
     let posts_iter = stmt.query_map(params![], |row| {
         Ok(super::types::Post {
