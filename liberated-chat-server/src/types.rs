@@ -53,6 +53,7 @@ impl AppState {
                 expiration INTEGER NOT NULL
             );
             CREATE INDEX IF NOT EXISTS sessions_index ON sessions (username, sessionId);
+            PRAGMA journal_mode=WAL;
             ",
         )
         .unwrap();
