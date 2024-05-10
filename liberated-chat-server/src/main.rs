@@ -41,8 +41,8 @@ async fn login(
     }
 
     let db = state
-        .db
-        .lock()
+        .pool
+        .get()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     if let Some(cookie) = jar.get("Liberated-Chat-Auth") {
@@ -89,8 +89,8 @@ async fn register(
     let hashed_password = utils::hash(password).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let db = state
-        .db
-        .lock()
+        .pool
+        .get()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     utils::register_user(username, &hashed_password, &db).map_err(|_| StatusCode::CONFLICT)?;
@@ -99,8 +99,8 @@ async fn register(
 
 async fn posts(jar: CookieJar, State(state): State<types::AppState>) -> Result<String, StatusCode> {
     let db = state
-        .db
-        .lock()
+        .pool
+        .get()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let auth_cookie = if let Some(cookie) = jar.get("Liberated-Chat-Auth") {
@@ -130,8 +130,8 @@ async fn newpost(
     body: Bytes,
 ) -> Result<String, StatusCode> {
     let db = state
-        .db
-        .lock()
+        .pool
+        .get()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let auth_cookie = if let Some(cookie) = jar.get("Liberated-Chat-Auth") {
@@ -166,8 +166,8 @@ async fn logout(
     State(state): State<types::AppState>,
 ) -> Result<(CookieJar, String), StatusCode> {
     let db = state
-        .db
-        .lock()
+        .pool
+        .get()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let auth_cookie = if let Some(cookie) = jar.get("Liberated-Chat-Auth") {
@@ -235,3 +235,4 @@ async fn main() {
 
     axum::serve(listener, routes).await.unwrap();
 }
+

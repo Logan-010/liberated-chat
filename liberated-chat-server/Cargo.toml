@@ -48,3 +48,5 @@ uuid = { version = "1.7.0", features = ["v4"], default-features = false }
 tracing-subscriber = { version = "0.3.18", features = [
   "fmt",
 ], default-features = false }
+r2d2 = { version = "0.8.10", default-features = false }
+r2d2_sqlite = { version = "0.24.0", default-features = false }

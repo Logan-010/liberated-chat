@@ -1,13 +1,12 @@
+use r2d2::Pool;
+use r2d2_sqlite::SqliteConnectionManager;
 use serde::{Deserialize, Serialize};
-use std::{
-    env,
-    sync::{Arc, Mutex},
-};
+use std::env;
 
 #[derive(Clone)]
 pub struct AppState {
     //Mutex is best practice for a simple sqlite3 db
-    pub db: Arc<Mutex<rusqlite::Connection>>,
+    pub pool: Pool<SqliteConnectionManager>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -32,34 +31,40 @@ impl AppState {
             env::var("DATABASE_PATH").expect("Set DATABASE_PATH env variable!"),
             env::var("DATABASE_NAME").expect("Set DATABASE_NAME env variable!")
         );
-        let db = rusqlite::Connection::open(path).unwrap();
+        let manager = SqliteConnectionManager::file(path);
+        let pool = Pool::new(manager).expect("Failed to open database file!");
 
-        db.execute_batch(
-            "
-            CREATE TABLE IF NOT EXISTS users (
-                username TEXT NOT NULL UNIQUE,
-                password TEXT NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS username_index ON users (username);
-            CREATE TABLE IF NOT EXISTS posts (
-                postNum INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL,
-                message TEXT NOT NULL,
-                time TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS sessions (
-                username TEXT NOT NULL UNIQUE,
-                sessionId TEXT NOT NULL UNIQUE,
-                expiration INTEGER NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS sessions_index ON sessions (username, sessionId);
-            PRAGMA journal_mode=WAL;
-            ",
-        )
-        .unwrap();
+        pool.get()
+            .expect("Failed to access database!")
+            .execute_batch(
+                "
+                    PRAGMA journal_mode=WAL;
+                    PRAGMA busy_timeout = 5000;
+                    PRAGMA synchronous = NORMAL;
+                    PRAGMA cache_size = 1000000000;
+                    PRAGMA foreign_keys = true;
+                    PRAGMA temp_store = memory;
+                    CREATE TABLE IF NOT EXISTS users (
+                        username TEXT NOT NULL UNIQUE,
+                        password TEXT NOT NULL
+                    ) STRICT;
+                    CREATE INDEX IF NOT EXISTS username_index ON users (username);
+                    CREATE TABLE IF NOT EXISTS posts (
+                        postNum INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT NOT NULL,
+                        message TEXT NOT NULL,
+                        time TEXT NOT NULL
+                    ) STRICT;
+                    CREATE TABLE IF NOT EXISTS sessions (
+                        username TEXT NOT NULL UNIQUE,
+                        sessionId TEXT NOT NULL UNIQUE,
+                        expiration INTEGER NOT NULL
+                    ) STRICT;
+                    CREATE INDEX IF NOT EXISTS sessions_index ON sessions (username, sessionId);
+                ",
+            )
+            .unwrap();
 
-        Self {
-            db: Arc::new(Mutex::new(db)),
-        }
+        Self { pool }
     }
 }
